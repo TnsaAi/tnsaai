@@ -8,49 +8,46 @@ import { PostCard } from "@/components/PostCard"
 import { DiscussionThread } from "@/components/DiscussionThread"
 import { CodeIdeaCard } from "@/components/CodeIdeaCard"
 import { CreateContentForm } from "@/components/CreateContentForm"
-import { auth, firestore } from '@/lib/firebase-client'
-import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore'
+
+// Mock data for demonstration
+const mockData = {
+  posts: [
+    { id: '1', title: 'First Post', author: 'User1', date: '2023-12-15', excerpt: 'This is the first post' },
+    { id: '2', title: 'Second Post', author: 'User2', date: '2023-12-16', excerpt: 'This is the second post' },
+  ],
+  discussions: [
+    { id: '1', title: 'First Discussion', author: 'User3', date: '2023-12-15', replies: 5 },
+    { id: '2', title: 'Second Discussion', author: 'User4', date: '2023-12-16', replies: 3 },
+  ],
+  codeIdeas: [
+    { id: '1', title: 'First Code Idea', author: 'User5', date: '2023-12-15', language: 'JavaScript', votes: 10 },
+    { id: '2', title: 'Second Code Idea', author: 'User6', date: '2023-12-16', language: 'Python', votes: 8 },
+  ],
+}
 
 export default function CommunityPage() {
   const [activeTab, setActiveTab] = useState("posts")
-  const [contentList, setContentList] = useState({ posts: [], discussions: [], codeIdeas: [] })
+  const [contentList, setContentList] = useState(mockData)
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUser(user)
-      } else {
-        router.push('/login')
-      }
-    })
-
-    return () => unsubscribe()
-  }, [router])
-
-  useEffect(() => {
-    const unsubscribes = ['posts', 'discussions', 'codeIdeas'].map(contentType => {
-      const q = query(collection(firestore, contentType), orderBy('createdAt', 'desc'))
-      return onSnapshot(q, (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-        setContentList(prev => ({ ...prev, [contentType]: items }))
-      })
-    })
-
-    return () => unsubscribes.forEach(unsubscribe => unsubscribe())
+    // Simulating user authentication
+    const fakeUser = { uid: '123', email: 'user@example.com' }
+    setUser(fakeUser)
   }, [])
 
   const handleNewContent = async (newContent: any) => {
-    try {
-      await addDoc(collection(firestore, activeTab), {
+    // Simulating content addition
+    setContentList(prevContent => ({
+      ...prevContent,
+      [activeTab]: [...prevContent[activeTab as keyof typeof prevContent], {
+        id: String(prevContent[activeTab as keyof typeof prevContent].length + 1),
         ...newContent,
-        createdAt: new Date(),
-        authorId: user.uid,
-      })
-    } catch (error) {
-      console.error("Error adding document: ", error)
-    }
+        date: new Date().toISOString().split('T')[0],
+        author: user?.email || 'Anonymous',
+      }]
+    }))
   }
 
   if (!user) {
